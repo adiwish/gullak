@@ -4,6 +4,7 @@ A minimal, warm, editorial dashboard where you and your brother set personal **m
 across categories (Push-ups, DSA, Weight…), each with a **cash reward (₹)**. Completing them
 grows your **gullak** (savings). Includes weight & activity graphs and a Hall of Fame / Shame.
 
+- **🌐 Live:** https://gullak-eosin.vercel.app · **Ops / infra / keys / resume steps:** [DEPLOYMENT.md](./DEPLOYMENT.md)
 - **Spec:** [FEATURES.md](./FEATURES.md) · **Build/design notes:** [IMPLEMENTATION.md](./IMPLEMENTATION.md)
 - **Stack:** React + TypeScript (Vite) · Tailwind · Recharts · optional Supabase · PWA
 
@@ -31,6 +32,10 @@ Other scripts: `npm run build` (production build → `dist/`), `npm run preview`
 ---
 
 ## Deploy to Vercel
+> ✅ **Already deployed & live:** https://gullak-eosin.vercel.app — repo `adiwish/gullak`, auto-deploys on
+> every push to `main`. Full live details (Vercel project, Supabase, SSH, env keys, troubleshooting,
+> resume checklist) are in **[DEPLOYMENT.md](./DEPLOYMENT.md)**. The steps below are the generic recipe.
+
 1. Push this folder to a **GitHub** repo.
 2. On **vercel.com** → **New Project** → import the repo. Framework preset: **Vite** (auto-detected).
 3. Click **Deploy**. You get a live URL; every push to `main` redeploys.

@@ -8,6 +8,7 @@ can continue confidently. Companion to the other docs:
 | [FEATURES.md](./FEATURES.md) | **What** to build — product requirements + decision log (source of truth) |
 | [IMPLEMENTATION.md](./IMPLEMENTATION.md) | **How** — tech stack, design system, DB schema, build phases |
 | [README.md](./README.md) | Run + **deploy** instructions (Vercel + optional Supabase) |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | **Live ops/infra:** URLs, GitHub, SSH, Vercel, Supabase, keys, resume steps |
 | **PROJECT_OVERVIEW.md** (this file) | Detailed handoff: architecture, file-by-file, logic, caveats |
 
 ---
@@ -22,6 +23,8 @@ The full behaviour (spill/surrender rules, scheduling, money math) is specified 
 this doc focuses on the code.
 
 ## 2. Current status
+- **v1.0 — LIVE in production.** Hosted on Vercel at **https://gullak-eosin.vercel.app** with **Supabase
+  shared-sync enabled and verified**. All live infra/keys/resume steps are in [DEPLOYMENT.md](./DEPLOYMENT.md).
 - **v1.0 — complete and deployable.** Typecheck + production build pass; PWA service worker builds.
 - **Starts empty:** no demo profiles or data. First run shows the login screen in "create profile" mode.
 - **Local-first** by default (works with zero backend). **Optional Supabase** sync turns on when env vars are set.
