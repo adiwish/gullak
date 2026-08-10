@@ -1,10 +1,18 @@
-import { LogOut, Moon, PencilLine, Sun } from 'lucide-react'
+import { LayoutDashboard, LogOut, Maximize2, Moon, PencilLine, Sun } from 'lucide-react'
 import { useTheme } from '@/theme/ThemeProvider'
 import { useStore } from '@/store/StoreContext'
 import { useAuth } from '@/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
 
-export function Header({ onOpenLog }: { onOpenLog: () => void }) {
+export function Header({
+  onOpenLog,
+  focusMode = false,
+  onToggleFocus,
+}: {
+  onOpenLog?: () => void
+  focusMode?: boolean
+  onToggleFocus?: () => void
+}) {
   const { theme, toggle } = useTheme()
   const { data } = useStore()
   const { logout } = useAuth()
@@ -20,9 +28,17 @@ export function Header({ onOpenLog }: { onOpenLog: () => void }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onOpenLog}>
-          <PencilLine className="h-3.5 w-3.5" /> Log today
-        </Button>
+        {onToggleFocus && (
+          <Button variant={focusMode ? 'default' : 'outline'} size="sm" onClick={onToggleFocus}>
+            {focusMode ? <LayoutDashboard className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {focusMode ? 'Dashboard' : 'Focus'}
+          </Button>
+        )}
+        {onOpenLog && (
+          <Button variant="outline" size="sm" onClick={onOpenLog}>
+            <PencilLine className="h-3.5 w-3.5" /> Log today
+          </Button>
+        )}
         <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
@@ -34,4 +50,3 @@ export function Header({ onOpenLog }: { onOpenLog: () => void }) {
     </header>
   )
 }
-

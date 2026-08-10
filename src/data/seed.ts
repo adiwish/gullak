@@ -13,6 +13,7 @@ export function buildSeed(): AppData {
     metrics: [],
     milestones: [],
     dailyLogs: [],
+    todos: [],
     transactions: [],
     widgets: [],
     currentProfileId: undefined,

@@ -7,6 +7,7 @@ import type {
   MetricKind,
   Milestone,
   MilestoneStatus,
+  Todo,
 } from '@/types'
 import { buildSeed, CHART_COLORS } from '@/data/seed'
 import { uid } from '@/lib/utils'
@@ -30,6 +31,13 @@ export interface NewMilestoneInput {
   durationWeeks: number
 }
 
+export interface TodoInput {
+  title: string
+  date: string
+  milestoneId?: string
+  logValue?: number
+}
+
 const STORAGE_KEY = 'gullak.v2'
 
 function load(): AppData {
@@ -37,7 +45,7 @@ function load(): AppData {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       try {
-        return JSON.parse(raw) as AppData
+        return normalizeData(JSON.parse(raw) as AppData)
       } catch {
         /* fall through to seed */
       }
@@ -46,11 +54,15 @@ function load(): AppData {
   return buildSeed()
 }
 
+function normalizeData(data: AppData): AppData {
+  return { ...data, todos: data.todos ?? [] }
+}
+
 interface StoreValue {
   data: AppData
   setCurrentProfile: (id: string) => void
   addProfile: (name: string, passcode?: string) => string
-  logValue: (metricId: string, value: number) => void
+  logValue: (metricId: string, value: number, date?: string) => void
   achieve: (milestoneId: string) => void
   spill: (milestoneId: string) => void
   surrender: (milestoneId: string) => void
@@ -71,6 +83,10 @@ interface StoreValue {
   deleteWidget: (id: string) => void
   addLine: (widgetId: string, metricId: string) => void
   removeLine: (widgetId: string, lineId: string) => void
+  addTodo: (input: TodoInput) => string
+  updateTodo: (id: string, patch: Partial<TodoInput>) => void
+  deleteTodo: (id: string) => void
+  setTodoCompleted: (id: string, completed: boolean, logValue?: number) => void
 }
 
 const StoreContext = createContext<StoreValue | undefined>(undefined)
@@ -93,17 +109,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     ;(async () => {
       const remote = await loadRemote()
       if (remote) {
-        lastSync.current = JSON.stringify(shared(remote))
-        setData((d) => ({ ...remote, currentProfileId: d.currentProfileId ?? remote.currentProfileId }))
+        const normalized = normalizeData(remote)
+        lastSync.current = JSON.stringify(shared(normalized))
+        setData((d) => ({ ...normalized, currentProfileId: d.currentProfileId ?? normalized.currentProfileId }))
       } else {
         lastSync.current = JSON.stringify(shared(dataRef.current))
         void saveRemote(dataRef.current)
       }
       unsub = subscribeRemote((next) => {
-        const s = JSON.stringify(shared(next))
+        const normalized = normalizeData(next)
+        const s = JSON.stringify(shared(normalized))
         if (s === lastSync.current) return
         lastSync.current = s
-        setData((d) => ({ ...next, currentProfileId: d.currentProfileId }))
+        setData((d) => ({ ...normalized, currentProfileId: d.currentProfileId }))
       })
     })()
     return () => unsub()
@@ -144,8 +162,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return id
       },
 
-      logValue: (metricId, value) => {
-        const date = todayISO()
+      logValue: (metricId, value, date = todayISO()) => {
         setData((d) => {
           const existing = d.dailyLogs.find((l) => l.metricId === metricId && l.date === date)
           if (existing) {
@@ -322,6 +339,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           metrics: d.metrics.filter((m) => m.id !== id),
           milestones: d.milestones.filter((m) => m.metricId !== id),
           dailyLogs: d.dailyLogs.filter((l) => l.metricId !== id),
+          todos: d.todos.map((todo) => {
+            const milestone = d.milestones.find((m) => m.id === todo.milestoneId)
+            return milestone?.metricId === id ? { ...todo, milestoneId: undefined, logValue: undefined } : todo
+          }),
           widgets: d.widgets.map((w) => ({ ...w, lines: w.lines.filter((l) => l.metricId !== id) })),
         })),
 
@@ -369,7 +390,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             .sort((a, b) => a.seq - b.seq)
             .map((m, i) => ({ ...m, seq: i + 1 }))
           const others = rest.filter((m) => m.metricId !== target.metricId)
-          return { ...d, milestones: [...others, ...reseq] }
+          return {
+            ...d,
+            milestones: [...others, ...reseq],
+            todos: d.todos.map((todo) =>
+              todo.milestoneId === id ? { ...todo, milestoneId: undefined, logValue: undefined } : todo,
+            ),
+          }
         }),
 
       moveMilestone: (id, dir) =>
@@ -435,6 +462,78 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             w.id === widgetId ? { ...w, lines: w.lines.filter((l) => l.id !== lineId) } : w,
           ),
         })),
+
+      addTodo: (input) => {
+        const id = uid()
+        setData((d) => ({
+          ...d,
+          todos: [
+            ...d.todos,
+            {
+              id,
+              profileId: d.currentProfileId!,
+              title: input.title,
+              date: input.date,
+              milestoneId: input.milestoneId,
+              logValue: input.logValue,
+              completed: false,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }))
+        return id
+      },
+
+      updateTodo: (id, patch) =>
+        setData((d) => ({
+          ...d,
+          todos: d.todos.map((todo) => (todo.id === id ? { ...todo, ...patch } : todo)),
+        })),
+
+      deleteTodo: (id) =>
+        setData((d) => ({ ...d, todos: d.todos.filter((todo) => todo.id !== id) })),
+
+      setTodoCompleted: (id, completed, suppliedValue) =>
+        setData((d) => {
+          const todo = d.todos.find((item) => item.id === id)
+          if (!todo) return d
+
+          const milestone = todo.milestoneId
+            ? d.milestones.find((item) => item.id === todo.milestoneId)
+            : undefined
+          const valueToLog = suppliedValue ?? todo.logValue
+          if (completed && milestone && !Number.isFinite(valueToLog)) return d
+
+          let dailyLogs = d.dailyLogs
+          if (completed && milestone && valueToLog !== undefined) {
+            const existing = dailyLogs.find(
+              (log) => log.metricId === milestone.metricId && log.date === todo.date,
+            )
+            dailyLogs = existing
+              ? dailyLogs.map((log) =>
+                  log.id === existing.id ? { ...log, value: valueToLog } : log,
+                )
+              : [
+                  ...dailyLogs,
+                  { id: uid(), metricId: milestone.metricId, date: todo.date, value: valueToLog },
+                ]
+          }
+
+          return {
+            ...d,
+            dailyLogs,
+            todos: d.todos.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    completed,
+                    logValue: valueToLog,
+                    completedAt: completed ? new Date().toISOString() : undefined,
+                  }
+                : item,
+            ),
+          }
+        }),
     }
   }, [data])
 
