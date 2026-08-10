@@ -49,6 +49,21 @@ export interface DailyLog {
   value: number
 }
 
+export interface Todo {
+  id: string
+  profileId: string
+  title: string
+  /** ISO date this task belongs to. */
+  date: string
+  /** Optional link to the milestone this task helps progress. */
+  milestoneId?: string
+  /** Value written to DailyLog when a linked task is completed. */
+  logValue?: number
+  completed: boolean
+  createdAt: string
+  completedAt?: string
+}
+
 export interface Transaction {
   id: string
   profileId: string
@@ -81,6 +96,7 @@ export interface AppData {
   metrics: Metric[]
   milestones: Milestone[]
   dailyLogs: DailyLog[]
+  todos: Todo[]
   transactions: Transaction[]
   widgets: GraphWidget[]
   currentProfileId?: string
