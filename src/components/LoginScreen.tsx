@@ -14,10 +14,12 @@ export function LoginScreen() {
   const [selectedId, setSelectedId] = useState<string | undefined>(data.profiles[0]?.id)
   const [passcode, setPasscode] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
   // Create form
   const [name, setName] = useState('')
   const [newPass, setNewPass] = useState('')
+  const [createError, setCreateError] = useState('')
 
   function submitLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -32,9 +34,26 @@ export function LoginScreen() {
 
   function submitCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return
-    const id = addProfile(name.trim(), newPass.trim() || undefined)
-    login(id, newPass.trim())
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      setCreateError('Please enter a username.')
+      return
+    }
+
+    const result = addProfile(trimmedName, newPass.trim() || undefined)
+    if (!result.ok) {
+      setCreateError('This username already exists. Please sign in instead.')
+      return
+    }
+
+    setSelectedId(result.id)
+    setPasscode('')
+    setName('')
+    setNewPass('')
+    setCreateError('')
+    setError('')
+    setNotice(`Account “${trimmedName}” created successfully. Sign in to continue.`)
+    setMode('select')
   }
 
   return (
@@ -50,6 +69,14 @@ export function LoginScreen() {
         <Card className="p-6">
           {mode === 'select' ? (
             <form onSubmit={submitLogin} className="space-y-4">
+              {notice && (
+                <div
+                  role="status"
+                  className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-foreground"
+                >
+                  {notice}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Who's this?</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -60,6 +87,7 @@ export function LoginScreen() {
                       onClick={() => {
                         setSelectedId(p.id)
                         setError('')
+                        setNotice('')
                       }}
                       className={
                         'rounded-md border px-3 py-2 text-sm transition-colors ' +
@@ -94,7 +122,11 @@ export function LoginScreen() {
 
               <button
                 type="button"
-                onClick={() => setMode('create')}
+                onClick={() => {
+                  setMode('create')
+                  setNotice('')
+                  setCreateError('')
+                }}
                 className="flex w-full items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               >
                 <UserPlus className="h-3.5 w-3.5" /> Create a new profile
@@ -103,8 +135,25 @@ export function LoginScreen() {
           ) : (
             <form onSubmit={submitCreate} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                <Label htmlFor="name">Username</Label>
+                <Input
+                  id="name"
+                  autoFocus
+                  autoComplete="username"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value)
+                    setCreateError('')
+                  }}
+                  placeholder="Choose a username"
+                  aria-invalid={Boolean(createError)}
+                  aria-describedby={createError ? 'create-error' : undefined}
+                />
+                {createError && (
+                  <p id="create-error" role="alert" className="text-xs text-danger">
+                    {createError}
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="newpass">Passcode</Label>
@@ -112,18 +161,22 @@ export function LoginScreen() {
                   id="newpass"
                   type="password"
                   inputMode="numeric"
+                  autoComplete="new-password"
                   value={newPass}
                   onChange={(e) => setNewPass(e.target.value)}
                   placeholder="Choose a passcode"
                 />
               </div>
               <Button type="submit" className="w-full">
-                Create & enter <ArrowRight className="h-4 w-4" />
+                Create account <ArrowRight className="h-4 w-4" />
               </Button>
               {data.profiles.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setMode('select')}
+                  onClick={() => {
+                    setMode('select')
+                    setCreateError('')
+                  }}
                   className="w-full text-xs text-muted-foreground hover:text-foreground"
                 >
                   Back to sign in

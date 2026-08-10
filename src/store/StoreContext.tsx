@@ -40,6 +40,10 @@ export interface TodoInput {
 
 const STORAGE_KEY = 'gullak.v2'
 
+function profileNameKey(name: string): string {
+  return name.trim().toLocaleLowerCase()
+}
+
 function load(): AppData {
   if (typeof localStorage !== 'undefined') {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -61,7 +65,9 @@ function normalizeData(data: AppData): AppData {
 interface StoreValue {
   data: AppData
   setCurrentProfile: (id: string) => void
-  addProfile: (name: string, passcode?: string) => string
+  addProfile: (name: string, passcode?: string) =>
+    | { ok: true; id: string }
+    | { ok: false; reason: 'duplicate' }
   logValue: (metricId: string, value: number, date?: string) => void
   achieve: (milestoneId: string) => void
   spill: (milestoneId: string) => void
@@ -95,6 +101,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(load)
   const dataRef = useRef(data)
   dataRef.current = data
+  const profileNamesRef = useRef(new Set<string>())
+  profileNamesRef.current = new Set(data.profiles.map((profile) => profileNameKey(profile.name)))
   const lastSync = useRef<string>('')
 
   // Persist locally always.
@@ -153,13 +161,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCurrentProfile: (id) => setData((d) => ({ ...d, currentProfileId: id })),
 
       addProfile: (name, passcode) => {
+        const trimmedName = name.trim()
+        const nameKey = profileNameKey(trimmedName)
+        if (profileNamesRef.current.has(nameKey)) {
+          return { ok: false, reason: 'duplicate' }
+        }
+
+        // Reserve the name immediately so rapid repeated submissions cannot
+        // create duplicates before React has rendered the updated state.
+        profileNamesRef.current.add(nameKey)
         const id = uid()
         setData((d) => ({
           ...d,
-          profiles: [...d.profiles, { id, name, passcode }],
-          currentProfileId: id,
+          profiles: [...d.profiles, { id, name: trimmedName, passcode }],
         }))
-        return id
+        return { ok: true, id }
       },
 
       logValue: (metricId, value, date = todayISO()) => {
