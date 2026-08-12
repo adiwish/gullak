@@ -84,6 +84,7 @@ milestone dashboard. Each profile can define activities with an optional minimum
 and automatic percentage-based progress bands; log one editable daily total; use an additive
 persistent timer for minute/hour activities; and review a colour-coded rolling seven-day summary.
 Balanced data is local-first and joins the same optional whole-document Supabase sync when configured.
+New profiles start with editable **Coding** and **Reading** activities so Balanced mode is immediately usable.
 
 ---
 

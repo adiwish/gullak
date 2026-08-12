@@ -53,6 +53,33 @@ function profileNameKey(name: string): string {
   return name.trim().toLocaleLowerCase()
 }
 
+function starterBalancedActivities(profileId: string): BalancedActivity[] {
+  const createdAt = new Date().toISOString()
+  return [
+    {
+      id: uid(),
+      profileId,
+      name: 'Coding',
+      unit: 'minutes',
+      timerUnit: 'minutes',
+      minimum: 20,
+      dailyLimit: 120,
+      sortOrder: 0,
+      createdAt,
+    },
+    {
+      id: uid(),
+      profileId,
+      name: 'Reading',
+      unit: 'pages',
+      minimum: 10,
+      dailyLimit: 40,
+      sortOrder: 1,
+      createdAt,
+    },
+  ]
+}
+
 function load(): AppData {
   if (typeof localStorage !== 'undefined') {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -205,6 +232,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setData((d) => ({
           ...d,
           profiles: [...d.profiles, { id, name: trimmedName, passcode }],
+          balancedActivities: [...d.balancedActivities, ...starterBalancedActivities(id)],
         }))
         return { ok: true, id }
       },
