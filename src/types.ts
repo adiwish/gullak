@@ -91,6 +91,33 @@ export interface GraphWidget {
   lines: GraphLine[]
 }
 
+export type BalancedTimerUnit = 'minutes' | 'hours'
+
+export interface BalancedActivity {
+  id: string
+  profileId: string
+  name: string
+  unit: string
+  /** Present only when this activity can be measured with the built-in timer. */
+  timerUnit?: BalancedTimerUnit
+  /** Optional personal floor. When omitted, the default 20% encouragement band is used. */
+  minimum?: number
+  /** The user's protective 100% boundary. Status bands are derived internally. */
+  dailyLimit: number
+  sortOrder: number
+  createdAt: string
+}
+
+export interface BalancedDailyLog {
+  id: string
+  activityId: string
+  /** ISO date (yyyy-mm-dd). One total per activity per date. */
+  date: string
+  value: number
+  source: 'manual' | 'timer'
+  updatedAt: string
+}
+
 export interface AppData {
   profiles: Profile[]
   metrics: Metric[]
@@ -99,5 +126,7 @@ export interface AppData {
   todos: Todo[]
   transactions: Transaction[]
   widgets: GraphWidget[]
+  balancedActivities: BalancedActivity[]
+  balancedDailyLogs: BalancedDailyLog[]
   currentProfileId?: string
 }

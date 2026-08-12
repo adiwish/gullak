@@ -3,15 +3,20 @@ import { useTheme } from '@/theme/ThemeProvider'
 import { useStore } from '@/store/StoreContext'
 import { useAuth } from '@/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
+import type { ProductMode } from '@/App'
 
 export function Header({
   onOpenLog,
   focusMode = false,
   onToggleFocus,
+  productMode = 'gullak',
+  onProductModeChange,
 }: {
   onOpenLog?: () => void
   focusMode?: boolean
   onToggleFocus?: () => void
+  productMode?: ProductMode
+  onProductModeChange?: (mode: ProductMode) => void
 }) {
   const { theme, toggle } = useTheme()
   const { data } = useStore()
@@ -19,12 +24,32 @@ export function Header({
   const profile = data.profiles.find((p) => p.id === data.currentProfileId)
 
   return (
-    <header className="flex items-center justify-between py-5">
-      <div className="flex items-baseline gap-2">
-        <span className="font-serif text-2xl font-semibold tracking-tight">gullak</span>
-        <span className="hidden text-xs uppercase tracking-widest text-muted-foreground sm:inline">
-          milestone tracker
-        </span>
+    <header className="flex flex-wrap items-center justify-between gap-3 py-5">
+      <div className="flex items-center gap-3">
+        <div className="flex items-baseline gap-2">
+          <span className="font-serif text-2xl font-semibold tracking-tight">gullak</span>
+          <span className="hidden text-xs uppercase tracking-widest text-muted-foreground lg:inline">
+            milestone tracker
+          </span>
+        </div>
+        {onProductModeChange && (
+          <div className="flex rounded-md border border-border bg-card p-0.5" aria-label="Product mode">
+            {(['gullak', 'balanced'] as ProductMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={productMode === mode}
+                onClick={() => onProductModeChange(mode)}
+                className={
+                  'rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors ' +
+                  (productMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')
+                }
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

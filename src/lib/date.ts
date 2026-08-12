@@ -7,14 +7,14 @@ export function todayISO(): string {
 }
 
 export function addWeeksISO(iso: string, weeks: number): string {
-  const d = new Date(iso + 'T00:00:00')
-  d.setDate(d.getDate() + Math.round(weeks * 7))
+  const d = new Date(iso + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + Math.round(weeks * 7))
   return d.toISOString().slice(0, 10)
 }
 
 export function addDaysISO(iso: string, days: number): string {
-  const d = new Date(iso + 'T00:00:00')
-  d.setDate(d.getDate() + days)
+  const d = new Date(iso + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
   return d.toISOString().slice(0, 10)
 }
 

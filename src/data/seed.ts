@@ -16,6 +16,8 @@ export function buildSeed(): AppData {
     todos: [],
     transactions: [],
     widgets: [],
+    balancedActivities: [],
+    balancedDailyLogs: [],
     currentProfileId: undefined,
   }
 }
