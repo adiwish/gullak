@@ -14,8 +14,15 @@ import { WidgetDialog } from '@/components/WidgetDialog'
 import { DailyLogModal } from '@/components/DailyLogModal'
 import { FocusView } from '@/components/FocusView'
 import { Button } from '@/components/ui/button'
+import type { ProductMode } from '@/App'
 
-export function Dashboard() {
+export function Dashboard({
+  productMode,
+  onProductModeChange,
+}: {
+  productMode: ProductMode
+  onProductModeChange: (mode: ProductMode) => void
+}) {
   const { data } = useStore()
   const pid = data.currentProfileId!
   const widgets = data.widgets
@@ -40,7 +47,12 @@ export function Dashboard() {
   if (focusMode) {
     return (
       <div className="mx-auto max-w-5xl px-4">
-        <Header focusMode onToggleFocus={() => setFocusMode(false)} />
+        <Header
+          productMode={productMode}
+          onProductModeChange={onProductModeChange}
+          focusMode
+          onToggleFocus={() => setFocusMode(false)}
+        />
         <FocusView />
       </div>
     )
@@ -48,7 +60,12 @@ export function Dashboard() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-20">
-      <Header onOpenLog={() => setLogOpen(true)} onToggleFocus={() => setFocusMode(true)} />
+      <Header
+        productMode={productMode}
+        onProductModeChange={onProductModeChange}
+        onOpenLog={() => setLogOpen(true)}
+        onToggleFocus={() => setFocusMode(true)}
+      />
 
       {/* Hall of Fame | Shame */}
       <div className="grid gap-4 md:grid-cols-2">

@@ -77,6 +77,14 @@ Enable this so both of you see the same live data from any device.
 > fine for a family tool, not real multi-tenant security. Hardening (Supabase Auth + per-user RLS,
 > or the relational schema in IMPLEMENTATION.md §3) is future work.
 
+## Balanced mode
+
+The header's **Gullak / Balanced** switch opens a sustainable-progress tracker alongside the
+milestone dashboard. Each profile can define activities with an optional minimum, one daily limit,
+and automatic percentage-based progress bands; log one editable daily total; use an additive
+persistent timer for minute/hour activities; and review a colour-coded rolling seven-day summary.
+Balanced data is local-first and joins the same optional whole-document Supabase sync when configured.
+
 ---
 
 ## Install on your phone (PWA)

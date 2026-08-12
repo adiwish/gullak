@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type {
   AppData,
+  BalancedActivity,
   Direction,
   GraphWidget,
   Metric,
@@ -38,6 +39,14 @@ export interface TodoInput {
   logValue?: number
 }
 
+export interface BalancedActivityInput {
+  name: string
+  unit: string
+  timerUnit?: 'minutes' | 'hours'
+  minimum?: number
+  dailyLimit: number
+}
+
 const STORAGE_KEY = 'gullak.v2'
 
 function profileNameKey(name: string): string {
@@ -59,7 +68,19 @@ function load(): AppData {
 }
 
 function normalizeData(data: AppData): AppData {
-  return { ...data, todos: data.todos ?? [] }
+  return {
+    ...data,
+    todos: data.todos ?? [],
+    balancedActivities: (data.balancedActivities ?? []).map((activity) => {
+      const legacy = activity as BalancedActivity & { minimum?: number; maximum?: number }
+      return {
+        ...activity,
+        minimum: legacy.minimum,
+        dailyLimit: activity.dailyLimit ?? legacy.maximum ?? 1,
+      }
+    }),
+    balancedDailyLogs: data.balancedDailyLogs ?? [],
+  }
 }
 
 interface StoreValue {
@@ -93,6 +114,16 @@ interface StoreValue {
   updateTodo: (id: string, patch: Partial<TodoInput>) => void
   deleteTodo: (id: string) => void
   setTodoCompleted: (id: string, completed: boolean, logValue?: number) => void
+  addBalancedActivity: (input: BalancedActivityInput) => string
+  updateBalancedActivity: (id: string, input: BalancedActivityInput) => void
+  deleteBalancedActivity: (id: string) => void
+  setBalancedDailyTotal: (
+    activityId: string,
+    date: string,
+    value: number,
+    source: 'manual' | 'timer',
+  ) => void
+  deleteBalancedDailyTotal: (activityId: string, date: string) => void
 }
 
 const StoreContext = createContext<StoreValue | undefined>(undefined)
@@ -550,6 +581,69 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             ),
           }
         }),
+
+      addBalancedActivity: (input) => {
+        const id = uid()
+        setData((d) => {
+          const sortOrder = Math.max(
+            -1,
+            ...d.balancedActivities
+              .filter((activity) => activity.profileId === d.currentProfileId)
+              .map((activity) => activity.sortOrder),
+          ) + 1
+          const activity: BalancedActivity = {
+            id,
+            profileId: d.currentProfileId!,
+            ...input,
+            sortOrder,
+            createdAt: new Date().toISOString(),
+          }
+          return { ...d, balancedActivities: [...d.balancedActivities, activity] }
+        })
+        return id
+      },
+
+      updateBalancedActivity: (id, input) =>
+        setData((d) => ({
+          ...d,
+          balancedActivities: d.balancedActivities.map((activity) =>
+            activity.id === id ? { ...activity, ...input } : activity,
+          ),
+        })),
+
+      deleteBalancedActivity: (id) =>
+        setData((d) => ({
+          ...d,
+          balancedActivities: d.balancedActivities.filter((activity) => activity.id !== id),
+          balancedDailyLogs: d.balancedDailyLogs.filter((log) => log.activityId !== id),
+        })),
+
+      setBalancedDailyTotal: (activityId, date, value, source) =>
+        setData((d) => {
+          const existing = d.balancedDailyLogs.find(
+            (log) => log.activityId === activityId && log.date === date,
+          )
+          const updatedAt = new Date().toISOString()
+          return {
+            ...d,
+            balancedDailyLogs: existing
+              ? d.balancedDailyLogs.map((log) =>
+                  log.id === existing.id ? { ...log, value, source, updatedAt } : log,
+                )
+              : [
+                  ...d.balancedDailyLogs,
+                  { id: uid(), activityId, date, value, source, updatedAt },
+                ],
+          }
+        }),
+
+      deleteBalancedDailyTotal: (activityId, date) =>
+        setData((d) => ({
+          ...d,
+          balancedDailyLogs: d.balancedDailyLogs.filter(
+            (log) => log.activityId !== activityId || log.date !== date,
+          ),
+        })),
     }
   }, [data])
 
